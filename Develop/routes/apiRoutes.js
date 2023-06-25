@@ -1,8 +1,8 @@
-const fs = require('fs');
-const path = require('path');
+const router = require('express').Router();
+const store = require('../db/store');
 
 module.exports = (app) => {
-  app.get('/api/notes', (req, res) => {
+  app.get('/notes', (req, res) => {
     fs.readFile(path.join(__dirname, '../db/db.json'), 'utf8', (err, data) => {
       if (err) {
         console.error(err);
@@ -14,7 +14,7 @@ module.exports = (app) => {
     });
   });
 
-  app.post('/api/notes', (req, res) => {
+  app.post('/notes', (req, res) => {
     const newNote = req.body;
 
     fs.readFile(path.join(__dirname, '../db/db.json'), 'utf8', (err, data) => {
@@ -41,7 +41,7 @@ module.exports = (app) => {
       );
     });
   });
-  app.delete('/api/notes/:id', (req, res) => {
+  app.delete('/notes/:id', (req, res) => {
     const noteId = parseInt(req.params.id);
 
     fs.readFile(path.join(__dirname, '../db/db.json'), 'utf8', (err, data) => {
