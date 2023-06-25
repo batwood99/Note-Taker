@@ -1,41 +1,35 @@
-const fs = require('fs').promises;
-const path = require('path');
-const { v1: uuidv1 } = require('uuid');
+const util = require('util');
+const fs = require('fs');
+
+const uuidv1 = require('uuid/v1');
+
+const readFileAsync = util.promisify(fs.readFile);
+const writeFileAsync = util.promisify(fs.writeFile);
 
 class Store {
-  async read() {
-    try {
-      const filePath = path.join(__dirname, 'db/db.json');
-      const data = await fs.readFile(filePath, 'utf8');
-      return data;
-    } catch (err) {
-      throw new Error('Failed to read notes data.');
-    }
+  read() {
+    return readFileAsync('db/db.json', 'utf8');
   }
 
-  async write(note) {
-    try {
-      const filePath = path.join(__dirname, 'db/db.json');
-      await fs.writeFile(filePath, JSON.stringify(note));
-    } catch (err) {
-      throw new Error('Failed to write notes data.');
-    }
+  write(note) {
+    return writeFileAsync('db/db.json', JSON.stringify(note));
   }
 
-  async getNotes() {
-    try {
-      const notes = await this.read();
-      const parsedNotes = JSON.parse(notes);
-      if (!Array.isArray(parsedNotes)) {
-        return [];
+  getNotes() {
+    return this.read().then((notes) => {
+      let parsedNotes;
+
+      try {
+        parsedNotes = [].concat(JSON.parse(notes));
+      } catch (err) {
+        parsedNotes = [];
       }
+
       return parsedNotes;
-    } catch (err) {
-      throw new Error('Failed to retrieve notes.');
-    }
+    });
   }
 
-  async addNote(note) {
+  addNote(note) {
     const { title, text } = note;
 
     if (!title || !text) {
@@ -44,24 +38,16 @@ class Store {
 
     const newNote = { title, text, id: uuidv1() };
 
-    try {
-      const notes = await this.getNotes();
-      const updatedNotes = [...notes, newNote];
-      await this.write(updatedNotes);
-      return newNote;
-    } catch (err) {
-      throw new Error('Failed to add note.');
-    }
+    return this.getNotes()
+      .then((notes) => [...notes, newNote])
+      .then((updatedNotes) => this.write(updatedNotes))
+      .then(() => newNote);
   }
 
-  async removeNote(id) {
-    try {
-      const notes = await this.getNotes();
-      const filteredNotes = notes.filter((note) => note.id !== id);
-      await this.write(filteredNotes);
-    } catch (err) {
-      throw new Error('Failed to remove note.');
-    }
+  removeNote(id) {
+    return this.getNotes()
+      .then((notes) => notes.filter((note) => note.id !== id))
+      .then((filteredNotes) => this.write(filteredNotes));
   }
 }
 
